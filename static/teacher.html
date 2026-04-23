@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal - Learning Mall</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        
+        .imageLogo{
+           max-height: 70px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 1.5rem;
+        }
+
+        .logo p {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .teacher-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* Dashboard Layout */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        /* Course Selector */
+        .course-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .course-select-btn {
+            padding: 0.75rem 1.5rem;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .course-select-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* File Upload Area */
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background: #f8f9fa;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+
+        .upload-area.drag-over {
+            background: #e0e7ff;
+            border-color: #5a67d8;
+        }
+
+        .upload-btn {
+            background: #667eea;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .upload-btn:hover {
+            background: #5a67d8;
+        }
+
+        /* File List */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-meta {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .delete-file {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete-file:hover {
+            background: #ff5252;
+        }
+
+        /* Pending Questions */
+        .question-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .question-meta {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .citation-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .approve-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+
+        .reject-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Common Questions Manager */
+        .common-question-item {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .edit-common {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .view-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .view-panel {
+            display: none;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        /* Success Message */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div>
+          <img class="imageLogo" src="/static/imageSources/learning.png">
+        </div>
+        <div class="teacher-badge">
+            Teacher Portal
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-files">0</div>
+                <p>Total Files Uploaded</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-questions">0</div>
+                <p>Questions Answered</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pending-count">0</div>
+                <p>Pending Questions</p>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard-layout">
+            <!-- Left Column: File Management -->
+            <div>
+                <div class="card">
+                    <h2>📁 Course Material Management</h2>
+                    
+                    <div class="course-selector">
+                        <button class="course-select-btn active" data-course="cs101">CS101 - Programming</button>
+                        <button class="course-select-btn" data-course="math201">MATH201 - Calculus</button>
+                        <button class="course-select-btn" data-course="phys101">PHYS101 - Physics</button>
+                        <button class="course-select-btn" data-course="rbe211">RBE211 - Dynamic Systems</button>
+                    </div>
+
+                    <!-- Upload Area -->
+                    <div class="upload-area" id="upload-area">
+                        <p>📤 Drag & Drop files here or click to upload</p>
+                        <input type="file" id="file-input" multiple style="display: none;">
+                        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+                            Choose Files to Upload
+                        </button>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">
+                            Supported: PDF, DOC, PPT, TXT, Images
+                        </p>
+                    </div>
+
+                    <!-- Current Files -->
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="files">📄 Course Files</button>
+                        <button class="view-btn" data-view="common">⭐ Common Q&A</button>
+                    </div>
+
+                    <!-- Files Panel -->
+                    <div id="files-panel" class="view-panel active">
+                        <div id="file-list-container">
+                            <div class="file-list" id="file-list">
+                                <p style="text-align: center; color: #666;">No files uploaded yet. Upload course materials above!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Q&A Panel -->
+                    <div id="common-panel" class="view-panel">
+                        <div id="common-questions-container">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="addNewCommonQuestion()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            + Add Common Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Pending Questions -->
+            <div>
+                <div class="card">
+                    <h2>❓ Pending Student Questions</h2>
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        Review and approve answers. Approved answers will appear to students with a ✓ badge.
+                    </p>
+                    <div id="pending-questions-container">
+                        <p style="text-align: center; color: #666;">No pending questions. Great job staying on top of things! 🎉</p>
+                    </div>
+                </div>
+
+                <!-- Teacher Notes -->
+                <div class="card">
+                    <h2>📝 Quick Tips for Teachers</h2>
+                    <ul style="margin-left: 1.5rem; color: #666;">
+                        <li>Upload course materials (handbooks, assignments, slides)</li>
+                        <li>Students can view all uploaded files</li>
+                        <li>Set up common Q&A to answer frequent questions</li>
+                        <li>Approve student questions to build your knowledge base</li>
+                        <li>All answers include citations for student reference</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        let currentCourse = 'cs101';
+        let courseFilesData = {};
+        let kbData = {};
+        let pendingData = [];
+
+        async function loadAll() {
+            await Promise.all([
+                loadFiles(),
+                loadPending(),
+                loadKB(),
+            ]);
+            updateStats();
+        }
+
+        async function loadFiles() {
+            try {
+                const res = await fetch(`/api/files/${currentCourse}`);
+                courseFilesData[currentCourse] = await res.json();
+            } catch { courseFilesData[currentCourse] = []; }
+            renderFiles();
+        }
+
+        async function loadPending() {
+            try {
+                pendingData = await fetchPendingQuestions();
+            } catch { pendingData = []; }
+            renderPending();
+        }
+
+        async function loadKB() {
+            try {
+                kbData[currentCourse] = await fetchKnowledgeBase(currentCourse);
+            } catch { kbData[currentCourse] = []; }
+            renderKB();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('file-list');
+            const files = courseFilesData[currentCourse] || [];
+            if (!files.length) {
+                container.innerHTML = '<p style="text-align:center;color:#666;">No files uploaded yet.</p>';
+                return;
+            }
+            container.innerHTML = files.map(f => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-name">${escapeHtml(f.name)}</div>
+                        <div class="file-meta">Uploaded: ${new Date(f.uploadDate).toLocaleString()} | Size: ${formatFileSize(f.size)}</div>
+                    </div>
+                    <button class="delete-file" onclick="deleteFile('${currentCourse}','${encodeURIComponent(f.name)}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function renderPending() {
+            const container = document.getElementById('pending-questions-container');
+            if (!pendingData.length) {
+                container.innerHTML = '<p style="text-align:center;color:#666;">No pending questions. Great job!</p>';
+                return;
+            }
+            container.innerHTML = pendingData.map(q => `
+                <div class="question-item" data-id="${q.id}">
+                    <div class="question-text">"${escapeHtml(q.question)}"</div>
+                    <div class="question-meta">Course: ${q.course_id.toUpperCase()} | ${new Date(q.timestamp).toLocaleString()}</div>
+                    <textarea class="answer-input" id="answer-${q.id}" placeholder="Write teacher-approved answer..." rows="2"></textarea>
+                    <input type="text" class="citation-input" id="citation-${q.id}" placeholder="Source citation (e.g., Textbook Chapter 2, Page 15)">
+                    <div>
+                        <button class="approve-btn" onclick="doApprove('${q.id}')">Approve</button>
+                        <button class="reject-btn" onclick="doReject('${q.id}')">Dismiss</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderKB() {
+            const container = document.getElementById('common-questions-container');
+            const items = kbData[currentCourse] || [];
+            if (!items.length) {
+                container.innerHTML = '<p style="color:#666;">No Q&A entries yet.</p>';
+                return;
+            }
+            container.innerHTML = items.map((q, i) => `
+                <div class="common-question-item">
+                    <strong>Q:</strong> ${escapeHtml(q.question)}<br>
+                    <strong>A:</strong> ${escapeHtml(q.answer)}<br>
+                    <small>${escapeHtml(q.citation)}</small><br>
+                    <button class="edit-common" onclick="deleteKBEntry(${i})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            const totalFiles = Object.values(courseFilesData).reduce((s, f) => s + (f ? f.length : 0), 0);
+            document.getElementById('total-files').textContent = totalFiles;
+            const kbTotal = Object.values(kbData).reduce((s, a) => s + a.length, 0);
+            document.getElementById('total-questions').textContent = kbTotal;
+            document.getElementById('pending-count').textContent = pendingData.length;
+        }
+
+        async function uploadToBackend(files) {
+            for (const file of files) {
+                const form = new FormData();
+                form.append('file', file);
+                try {
+                    await fetch(`/api/upload/${currentCourse}`, { method: 'POST', body: form });
+                    showSuccess(`Uploaded: ${file.name}`);
+                } catch { showSuccess(`Failed: ${file.name}`); }
+            }
+            await loadFiles();
+            updateStats();
+        }
+
+        async function deleteFile(course, filename) {
+            if (!confirm('Delete this file?')) return;
+            await fetch(`/api/files/${course}/${filename}`, { method: 'DELETE' });
+            await loadFiles();
+            updateStats();
+        }
+
+        async function doApprove(id) {
+            const answer = document.getElementById(`answer-${id}`).value.trim();
+            const citation = document.getElementById(`citation-${id}`).value.trim();
+            if (!answer || !citation) { alert('Provide both answer and citation.'); return; }
+            const result = await approveAnswer(id, answer, citation);
+            if (result) {
+                showSuccess('Answer approved');
+                await loadPending();
+                await loadKB();
+                updateStats();
+            }
+        }
+
+        async function doReject(id) {
+            await fetch(`/api/pending/${id}`, { method: 'DELETE' });
+            showSuccess('Question dismissed');
+            await loadPending();
+            updateStats();
+        }
+
+        async function addNewCommonQuestion() {
+            const question = prompt('Enter question:');
+            if (!question) return;
+            const answer = prompt('Enter answer:');
+            if (!answer) return;
+            const citation = prompt('Enter citation:');
+            if (!citation) return;
+            await addKnowledgeBase(currentCourse, question, answer, citation);
+            showSuccess('Q&A added');
+            await loadKB();
+            updateStats();
+        }
+
+        async function deleteKBEntry(index) {
+            if (!confirm('Delete this Q&A?')) return;
+            await deleteKnowledgeBase(currentCourse, index);
+            showSuccess('Q&A deleted');
+            await loadKB();
+            updateStats();
+        }
+
+        function showSuccess(msg) {
+            const div = document.createElement('div');
+            div.className = 'success-message';
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        document.querySelectorAll('.course-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.course-select-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCourse = btn.dataset.course;
+                loadFiles();
+                loadKB();
+            });
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('files-panel').classList.remove('active');
+                document.getElementById('common-panel').classList.remove('active');
+                document.getElementById(`${view}-panel`).classList.add('active');
+            });
+        });
+
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            uploadToBackend(Array.from(e.dataTransfer.files));
+        });
+        fileInput.addEventListener('change', e => {
+            uploadToBackend(Array.from(e.target.files));
+            fileInput.value = '';
+        });
+
+        loadAll();
+        setInterval(async () => {
+            const old = pendingData.length;
+            await loadPending();
+            if (pendingData.length !== old) updateStats();
+        }, 3000);
+    </script>
+</body>
+</html>

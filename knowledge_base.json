@@ -1,0 +1,39 @@
+{
+  "cs101": [
+    {
+      "question": "When is the deadline?",
+      "answer": "The Module 1 Assignment is due on March 30, 2026 at 11:59 PM.",
+      "citation": "CS101 Assignment Sheet, Page 1"
+    },
+    {
+      "question": "What format should the assignment be?",
+      "answer": "Submit as a .py file named 'FirstName_LastName_Assignment1.py'",
+      "citation": "CS101 Assignment Guidelines, Page 3"
+    },
+    {
+      "question": "How many pages should the report be?",
+      "answer": "3-5 pages, double-spaced, excluding code.",
+      "citation": "CS101 Module Handbook, Page 15"
+    }
+  ],
+  "math201": [
+    {
+      "question": "When is the exam?",
+      "answer": "Mid-term Exam is April 15, 2026",
+      "citation": "MATH201 Syllabus, Page 1"
+    },
+    {
+      "question": "What is a derivative?",
+      "answer": "A derivative measures how a function changes as its input changes.",
+      "citation": "Stewart Calculus, Chapter 2, Page 45"
+    }
+  ],
+  "phys101": [
+    {
+      "question": "What is Newton's First Law?",
+      "answer": "An object stays at rest or in motion unless acted upon by an external force.",
+      "citation": "Physics Fundamentals, Chapter 4, Page 78"
+    }
+  ],
+  "rbe211": []
+}
