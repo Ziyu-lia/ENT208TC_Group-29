@@ -293,6 +293,17 @@ body {
     color: #48bb78;
 }
 
+.message .mjx-container {
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0.25rem 0;
+    display: inline-block;
+}
+
+.message .mjx-svg {
+    max-width: 100%;
+}
+
 .teacher-approved {
     display: inline-block;
     background: #48bb78;

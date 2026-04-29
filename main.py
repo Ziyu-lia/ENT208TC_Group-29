@@ -44,8 +44,8 @@ HYBRID_INSTRUCTION = (
     "   'I could not find this information in the course slides.' Then provide a "
     "   comprehensive overview from your general knowledge and/or web search. "
     "   End with: 🌐 Online Source: [Domain Name]\n"
-    "4. If no PDF materials are provided for this course, answer from general knowledge "
-    "   and end with: 🌐 Online Source: General Knowledge\n"
+    "4. If no PDF materials are provided for this course, answer from your general knowledge "
+    "   and end with: 🌐 Online Source: [Domain Name or General Reference]\n"
     "5. NEVER fabricate page numbers or document names. If citing a PDF, the page must exist."
 )
 
@@ -260,7 +260,7 @@ def parse_ai_response(raw: str, has_pdfs: bool, context: str) -> tuple[str, str,
     if has_pdfs and context:
         return raw, "Could not determine specific page — please verify in course materials.", "pdf"
 
-    return raw, "General Knowledge", "web"
+    return raw, "Online Reference — General Knowledge", "web"
 
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────

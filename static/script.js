@@ -1,3 +1,28 @@
+async function renderMath(element) {
+    if (!window.MathJax) {
+        await new Promise(resolve => {
+            let attempts = 0;
+            const check = setInterval(() => {
+                attempts++;
+                if (window.MathJax) { clearInterval(check); resolve(); }
+                if (attempts > 100) { clearInterval(check); resolve(); }
+            }, 100);
+        });
+    }
+    if (window.MathJax && MathJax.typesetPromise) {
+        try {
+            await MathJax.typesetPromise([element]);
+        } catch (e) {
+            await new Promise(r => setTimeout(r, 500));
+            try {
+                await MathJax.typesetPromise([element]);
+            } catch (e2) {
+                console.warn('MathJax render failed:', e2);
+            }
+        }
+    }
+}
+
 async function askSuperTA(courseId, question) {
     const messagesDiv = document.getElementById(`${courseId}-chat-messages`);
     if (!messagesDiv) return null;
@@ -49,9 +74,7 @@ async function askSuperTA(courseId, question) {
         messagesDiv.appendChild(botMsg);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        if (window.MathJax && MathJax.typesetPromise) {
-            MathJax.typesetPromise([botMsg]).catch(err => console.warn('MathJax render error:', err));
-        }
+        await renderMath(botMsg);
 
         return data;
     } catch (err) {
