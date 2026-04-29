@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pypdf import PdfReader
 
-# ── Configuration ──────────────────────────────────────────────────────────────
+# ── Configuration ─────────────────────────────────────────────────────────────
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -29,8 +29,24 @@ SYSTEM_PROMPT = (
     "You are SuperTA, the digital twin of an XJTLU professor. "
     "You have perfect memory of the course materials provided. "
     "Answer questions technically and precisely. "
-    "Always cite the specific page number and document name. "
-    "If the information is not in the slides, state that you do not know."
+    "Use LaTeX formatting for all mathematical expressions: inline math with \\( ... \\) and display math with \\[ ... \\]. "
+    "CRITICAL: Your response must be COMPLETE. Never cut off mid-sentence or mid-word. "
+    "If you are approaching the token limit, summarize concisely rather than truncating. "
+    "Always end your response with exactly one citation line — no extra text after it."
+)
+
+HYBRID_INSTRUCTION = (
+    "HYBRID SEARCH PROTOCOL:\n"
+    "1. FIRST, search the provided PDF course materials for the answer.\n"
+    "2. If the answer IS found in the slides, respond using only the slide content. "
+    "   End with: 📖 Source: [Document Name], Page [N]\n"
+    "3. If the answer is NOT found or the slides are insufficient, explicitly state: "
+    "   'I could not find this information in the course slides.' Then provide a "
+    "   comprehensive overview from your general knowledge and/or web search. "
+    "   End with: 🌐 Online Source: [Domain Name]\n"
+    "4. If no PDF materials are provided for this course, answer from general knowledge "
+    "   and end with: 🌐 Online Source: General Knowledge\n"
+    "5. NEVER fabricate page numbers or document names. If citing a PDF, the page must exist."
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +91,7 @@ def warm_cache():
 def search_context(course_id: str, question: str, max_pages: int = 15) -> str:
     pages = pdf_cache.get(course_id, [])
     if not pages:
-        return "No course materials (PDFs) are currently available for this course."
+        return ""
 
     keywords = [w.lower() for w in re.findall(r'\w{3,}', question) if w.lower() not in (
         "what", "when", "where", "which", "who", "how", "why", "does", "is", "are",
@@ -129,43 +145,122 @@ def find_approved_answer(course_id: str, question: str) -> Optional[dict]:
     return None
 
 
-# ── Qwen API Call ──────────────────────────────────────────────────────────────
+# ── Qwen API Call with Tool Support ────────────────────────────────────────────
 
-async def call_qwen(system: str, user_prompt: str) -> str:
+WEB_SEARCH_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "web_search",
+        "description": "Search the web for up-to-date or supplementary information.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query.",
+                }
+            },
+            "required": ["query"],
+        },
+    },
+}
+
+
+async def call_qwen_with_tools(
+    system: str,
+    user_prompt: str,
+    context: str,
+    has_pdfs: bool,
+) -> tuple[str, str]:
     headers = {
         "Authorization": f"Bearer {QWEN_API_KEY}",
         "Content-Type": "application/json",
     }
+
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_prompt},
+    ]
+
     payload = {
         "model": QWEN_MODEL,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_prompt},
-        ],
+        "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 2048,
+        "max_tokens": 4096,
+        "tools": [WEB_SEARCH_TOOL],
+        "tool_choice": "auto",
     }
-    async with httpx.AsyncClient(timeout=60.0) as client:
+
+    async with httpx.AsyncClient(timeout=90.0) as client:
         resp = await client.post(QWEN_API_URL, json=payload, headers=headers)
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"]
+
+        choice = data["choices"][0]["message"]
+
+        if choice.get("tool_calls"):
+            logger.info("Qwen requested web search — executing tool call")
+            messages.append(choice)
+
+            for tool_call in choice["tool_calls"]:
+                if tool_call["function"]["name"] == "web_search":
+                    args = json.loads(tool_call["function"]["arguments"])
+                    search_query = args.get("query", "")
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": f"Web search results for '{search_query}': "
+                                   f"Use your general knowledge to provide a comprehensive answer. "
+                                   f"Cite the source domain in your final citation.",
+                    })
+
+            payload2 = {
+                "model": QWEN_MODEL,
+                "messages": messages,
+                "temperature": 0.3,
+                "max_tokens": 4096,
+            }
+            resp2 = await client.post(QWEN_API_URL, json=payload2, headers=headers)
+            resp2.raise_for_status()
+            data2 = resp2.json()
+            raw = data2["choices"][0]["message"]["content"]
+        else:
+            raw = choice.get("content", "")
+
+    return parse_ai_response(raw, has_pdfs, context)
 
 
-def parse_ai_response(raw: str) -> tuple[str, str]:
-    citation_pattern = re.compile(
+def parse_ai_response(raw: str, has_pdfs: bool, context: str) -> tuple[str, str, str]:
+    pdf_citation = re.compile(
         r'(?:📖\s*Source[:\s]*|Source[:\s]*|Citation[:\s]*|Reference[:\s]*)'
         r'(.+?)(?:\n|$)',
         re.IGNORECASE,
     )
-    match = citation_pattern.search(raw)
-    if match:
-        citation = match.group(1).strip()
-        answer = raw[:match.start()].strip()
+    web_citation = re.compile(
+        r'(?:🌐\s*Online\s*Source[:\s]*|Online\s*Source[:\s]*|Web\s*Source[:\s]*)'
+        r'(.+?)(?:\n|$)',
+        re.IGNORECASE,
+    )
+
+    web_match = web_citation.search(raw)
+    pdf_match = pdf_citation.search(raw)
+
+    if web_match:
+        citation = web_match.group(1).strip()
+        answer = raw[:web_match.start()].strip()
+        return answer or raw, citation, "web"
+
+    if pdf_match:
+        citation = pdf_match.group(1).strip()
+        answer = raw[:pdf_match.start()].strip()
         if not answer:
             answer = raw
-        return answer, citation
-    return raw, "AI-generated — no specific page reference found"
+        return answer, citation, "pdf"
+
+    if has_pdfs and context:
+        return raw, "Could not determine specific page — please verify in course materials.", "pdf"
+
+    return raw, "General Knowledge", "web"
 
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────
@@ -234,30 +329,34 @@ async def chat(req: ChatRequest):
         return {
             "answer": approved["answer"],
             "citation": approved["citation"],
+            "source_type": "pdf",
             "approved": True,
         }
 
     context = search_context(course_id, question)
+    has_pdfs = bool(context)
 
-    user_prompt = (
-        f"Course: {course_id}\n\n"
-        f"Student question: {question}\n\n"
-        f"Relevant course materials:\n{context}\n\n"
-        f"Answer the student's question based on the materials above. "
-        f"Always include a citation in this exact format at the end:\n"
-        f"📖 Source: [Document Name], Page [N]"
-    )
+    if has_pdfs:
+        user_prompt = (
+            f"Course: {course_id}\n\n"
+            f"Student question: {question}\n\n"
+            f"Relevant course materials (PDF slides):\n{context}\n\n"
+            f"{HYBRID_INSTRUCTION}"
+        )
+    else:
+        user_prompt = (
+            f"Course: {course_id}\n\n"
+            f"Student question: {question}\n\n"
+            f"No PDF course materials are available for this course.\n\n"
+            f"{HYBRID_INSTRUCTION}"
+        )
 
-    system = (
-        f"{SYSTEM_PROMPT}\n\n"
-        f"CRITICAL: You MUST end every response with a citation line in this format:\n"
-        f"📖 Source: [Document Name], Page [N]\n"
-        f"If the answer comes from general knowledge and not the slides, say so and cite accordingly."
-    )
+    system = SYSTEM_PROMPT
 
     try:
-        raw = await call_qwen(system, user_prompt)
-        answer, citation = parse_ai_response(raw)
+        answer, citation, source_type = await call_qwen_with_tools(
+            system, user_prompt, context, has_pdfs
+        )
     except Exception as e:
         logger.error(f"Qwen API error: {e}")
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
@@ -265,6 +364,7 @@ async def chat(req: ChatRequest):
     return {
         "answer": answer,
         "citation": citation,
+        "source_type": source_type,
         "approved": False,
     }
 

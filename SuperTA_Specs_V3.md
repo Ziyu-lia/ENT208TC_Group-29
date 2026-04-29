@@ -24,7 +24,12 @@ Build the "Brain" (Backend API) for SuperTA using Qwen 3.6 Plus. This backend mu
 - **Step 3:** Implement Context Caching for Qwen to ensure that large lecture slide decks (PDFs) stay in active memory for fast student queries.
 - **Step 4:** Ensure the backend can update `knowledge_base.json` when the teacher "approves" an answer in `teacher.html`.
 
-## 5. System Prompt
-"You are SuperTA, the digital twin of an XJTLU professor. You have perfect memory of the course materials provided. Answer questions technically and precisely. Always cite the specific page number and document name. If the information is not in the slides, state that you do not know."
-
-* **Benchmark:** Achieve 90% accuracy on first-try answers with mandatory page-level citations.
+## 5. Phase 2: Hybrid Intelligence & UI Upgrades
+* **Math Rendering:** Integrate **MathJax 3.0** via CDN in `student.html`. Update `script.js` to call `MathJax.typeset()` after every message to render LaTeX formulas (e.g., matrices, Laplace transforms).
+* **Hybrid Search:** Enable Qwen 3.6 Plus 'Search' tool. 
+    * **Priority 1:** Search local `/data` PDF context.
+    * **Priority 2:** Use Web Search only if the answer is missing from slides or requires real-time data.
+* **Source UI Refinement:** 
+    * PDF Source: `📖 Source: [Filename], Page [N]`
+    * Web Source: `🌐 Online Source: [Domain Name]`
+* **Integrity Check:** Increase `max_tokens` to 2048 and update the System Prompt to prevent "Unfinished Responses".

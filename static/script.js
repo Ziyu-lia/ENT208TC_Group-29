@@ -31,13 +31,28 @@ async function askSuperTA(courseId, question) {
         const botMsg = document.createElement('div');
         botMsg.className = 'message bot';
         const badge = data.approved ? '<span class="teacher-approved">✓ Teacher Approved</span>' : '';
+
+        let sourceHtml = '';
+        if (data.source_type === 'web') {
+            sourceHtml = `<div class="citation web-source">🌐 Online Source: ${escapeHtml(data.citation)}</div>`;
+        } else if (data.source_type === 'pdf') {
+            sourceHtml = `<div class="citation">📖 Source: ${escapeHtml(data.citation)}</div>`;
+        } else {
+            sourceHtml = `<div class="citation">📝 ${escapeHtml(data.citation)}</div>`;
+        }
+
         botMsg.innerHTML = `
             <strong>SuperTA:</strong> ${escapeHtml(data.answer)}
             ${badge}
-            <div class="citation">📖 Source: ${escapeHtml(data.citation)}</div>
+            ${sourceHtml}
         `;
         messagesDiv.appendChild(botMsg);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise([botMsg]).catch(err => console.warn('MathJax render error:', err));
+        }
+
         return data;
     } catch (err) {
         messagesDiv.removeChild(loadingMsg);
