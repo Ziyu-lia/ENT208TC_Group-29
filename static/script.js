@@ -58,12 +58,16 @@ async function askSuperTA(courseId, question) {
         const badge = data.approved ? '<span class="teacher-approved">✓ Teacher Approved</span>' : '';
 
         let sourceHtml = '';
-        if (data.source_type === 'web') {
-            sourceHtml = `<div class="citation web-source">🌐 Online Source: ${escapeHtml(data.citation)}</div>`;
-        } else if (data.source_type === 'pdf') {
-            sourceHtml = `<div class="citation">📖 Source: ${escapeHtml(data.citation)}</div>`;
-        } else {
-            sourceHtml = `<div class="citation">📝 ${escapeHtml(data.citation)}</div>`;
+        const citationLines = data.citation.split('\n').filter(l => l.trim());
+        for (const line of citationLines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('🌐')) {
+                sourceHtml += `<div class="citation web-source">${escapeHtml(trimmed)}</div>`;
+            } else if (trimmed.startsWith('📖')) {
+                sourceHtml += `<div class="citation">${escapeHtml(trimmed)}</div>`;
+            } else {
+                sourceHtml += `<div class="citation">📝 ${escapeHtml(trimmed)}</div>`;
+            }
         }
 
         botMsg.innerHTML = `

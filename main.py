@@ -32,21 +32,28 @@ SYSTEM_PROMPT = (
     "Use LaTeX formatting for all mathematical expressions: inline math with \\( ... \\) and display math with \\[ ... \\]. "
     "CRITICAL: Your response must be COMPLETE. Never cut off mid-sentence or mid-word. "
     "If you are approaching the token limit, summarize concisely rather than truncating. "
-    "Always end your response with exactly one citation line — no extra text after it."
+    "Always end your response with citation line(s) — no extra text after them."
 )
 
 HYBRID_INSTRUCTION = (
     "HYBRID SEARCH PROTOCOL:\n"
     "1. FIRST, search the provided PDF course materials for the answer.\n"
     "2. If the answer IS found in the slides, respond using only the slide content. "
-    "   End with: 📖 Source: [Document Name], Page [N]\n"
+    "   End with citation line(s) in this EXACT format:\n"
+    "   📖 Source: [Exact Filename], Page [N]\n"
+    "   If multiple pages from the same document: 📖 Source: [Filename], Pages [N], [M], [K]\n"
+    "   If multiple documents: use one 📖 Source line per document.\n"
     "3. If the answer is NOT found or the slides are insufficient, explicitly state: "
     "   'I could not find this information in the course slides.' Then provide a "
-    "   comprehensive overview from your general knowledge and/or web search. "
-    "   End with: 🌐 Online Source: [Domain Name]\n"
+    "   comprehensive overview from your general knowledge. "
+    "   End with: 🌐 Online Source: AI Knowledge Base\n"
     "4. If no PDF materials are provided for this course, answer from your general knowledge "
-    "   and end with: 🌐 Online Source: [Domain Name or General Reference]\n"
-    "5. NEVER fabricate page numbers or document names. If citing a PDF, the page must exist."
+    "   and end with: 🌐 Online Source: AI Knowledge Base\n"
+    "5. NEVER fabricate page numbers or document names. If citing a PDF, the page must exist.\n"
+    "6. The citation line(s) must be the VERY LAST lines of your response. "
+    "   The citation line must contain ONLY the source information — no equations, no explanations, no extra text.\n"
+    "7. If you need real-time or current data (e.g., today's date, current announcements), "
+    "   you may use the web_search tool. Otherwise, rely on your pre-trained knowledge."
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -188,7 +195,6 @@ async def call_qwen_with_tools(
         "temperature": 0.3,
         "max_tokens": 4096,
         "tools": [WEB_SEARCH_TOOL],
-        "tool_choice": "auto",
     }
 
     async with httpx.AsyncClient(timeout=90.0) as client:
@@ -231,36 +237,56 @@ async def call_qwen_with_tools(
 
 
 def parse_ai_response(raw: str, has_pdfs: bool, context: str) -> tuple[str, str, str]:
-    pdf_citation = re.compile(
-        r'(?:📖\s*Source[:\s]*|Source[:\s]*|Citation[:\s]*|Reference[:\s]*)'
-        r'(.+?)(?:\n|$)',
-        re.IGNORECASE,
-    )
-    web_citation = re.compile(
-        r'(?:🌐\s*Online\s*Source[:\s]*|Online\s*Source[:\s]*|Web\s*Source[:\s]*)'
-        r'(.+?)(?:\n|$)',
-        re.IGNORECASE,
-    )
+    lines = raw.strip().split('\n')
 
-    web_match = web_citation.search(raw)
-    pdf_match = pdf_citation.search(raw)
+    citation_lines = []
+    answer_lines = []
+    in_answer = True
 
-    if web_match:
-        citation = web_match.group(1).strip()
-        answer = raw[:web_match.start()].strip()
-        return answer or raw, citation, "web"
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if in_answer:
+                answer_lines.append('')
+            continue
 
-    if pdf_match:
-        citation = pdf_match.group(1).strip()
-        answer = raw[:pdf_match.start()].strip()
-        if not answer:
-            answer = raw
-        return answer, citation, "pdf"
+        is_pdf_citation = bool(re.match(r'📖\s*Source:', stripped, re.IGNORECASE))
+        is_web_citation = bool(re.match(r'🌐\s*Online\s*Source:', stripped, re.IGNORECASE))
 
-    if has_pdfs and context:
-        return raw, "Could not determine specific page — please verify in course materials.", "pdf"
+        if is_pdf_citation or is_web_citation:
+            in_answer = False
+            citation_lines.append(stripped)
+        else:
+            if in_answer:
+                answer_lines.append(line)
+            else:
+                citation_lines.append(stripped)
 
-    return raw, "Online Reference — General Knowledge", "web"
+    answer = '\n'.join(answer_lines).strip()
+    citation = '\n'.join(citation_lines).strip()
+
+    if not answer:
+        answer = raw
+
+    if not citation:
+        if has_pdfs and context:
+            citation = "Could not determine specific page — please verify in course materials."
+            return answer, citation, "pdf"
+        else:
+            citation = "AI Knowledge Base"
+            return answer, citation, "web"
+
+    has_pdf = any(re.match(r'📖\s*Source:', c, re.IGNORECASE) for c in citation_lines)
+    has_web = any(re.match(r'🌐\s*Online\s*Source:', c, re.IGNORECASE) for c in citation_lines)
+
+    if has_web:
+        source_type = "web"
+    elif has_pdf:
+        source_type = "pdf"
+    else:
+        source_type = "web"
+
+    return answer, citation, source_type
 
 
 # ── Pydantic Models ────────────────────────────────────────────────────────────
@@ -333,7 +359,7 @@ async def chat(req: ChatRequest):
             "approved": True,
         }
 
-    context = search_context(course_id, question)
+    context = search_context(course_id, question, max_pages=10)
     has_pdfs = bool(context)
 
     if has_pdfs:
