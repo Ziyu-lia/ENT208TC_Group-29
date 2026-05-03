@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #8dda7bb2 0%, #bee360 100%);
     min-height: 100vh;
 }
 
@@ -63,13 +63,15 @@ body {
 }
 
 .tab-btn.active {
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
 }
 
 /* Main Content */
 .main-content {
     max-width: 1400px;
+
+    height: 1fr;
     margin: 2rem auto;
     padding: 0 2rem;
 }
@@ -90,7 +92,7 @@ body {
 
 /* Home Tab - Dashboard */
 .dashboard h2 {
-    color: white;
+    color: dark rgb(8, 131, 8);
     margin-bottom: 1.5rem;
 }
 
@@ -108,7 +110,7 @@ body {
 }
 
 .announcement-card h3 {
-    color: #667eea;
+    color: #9cbb4e;
     margin-bottom: 1rem;
 }
 
@@ -125,6 +127,7 @@ body {
 .courses-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
+    height: 1fr;
     gap: 1.5rem;
     background: white;
     border-radius: 12px;
@@ -165,7 +168,7 @@ body {
 }
 
 .course-btn.active {
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
 }
 
@@ -204,7 +207,7 @@ body {
 }
 
 .course-nav-btn.active {
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
 }
 
@@ -235,7 +238,7 @@ body {
 
 .view-file {
     padding: 0.25rem 1rem;
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
     border: none;
     border-radius: 4px;
@@ -243,7 +246,7 @@ body {
 }
 
 .view-file:hover {
-    background: #5a67d8;
+    background: #9cbb4e;
 }
 
 /* Chat Interface */
@@ -270,7 +273,7 @@ body {
 }
 
 .message.user {
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
     align-self: flex-end;
 }
@@ -283,7 +286,7 @@ body {
 
 .message .citation {
     font-size: 0.75rem;
-    color: #667eea;
+    color: #9cbb4e;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
     border-top: 1px solid #eee;
@@ -331,7 +334,7 @@ body {
 
 .chat-input-area button {
     padding: 0.5rem 1rem;
-    background: #667eea;
+    background: #9cbb4e;
     color: white;
     border: none;
     border-radius: 4px;
