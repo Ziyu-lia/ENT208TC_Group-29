@@ -426,9 +426,13 @@
                         <div id="common-questions-container">
                             <!-- Populated by JS -->
                         </div>
-                        <button onclick="addNewCommonQuestion()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            + Add Common Question
-                        </button>
+                        <h3 style="margin-top: 1.5rem; color: #333; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">+ Add New Q&A Entry</h3>
+                        <div style="margin-top: 0.75rem;">
+                            <input type="text" id="new-qa-question" placeholder="Question (e.g., When is the lab due?)" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">
+                            <textarea id="new-qa-answer" placeholder="Teacher-approved answer..." rows="3" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
+                            <input type="text" id="new-qa-citation" placeholder="Citation (e.g., Module Handbook, Page 4)" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">
+                            <button onclick="addNewCommonQuestionInline()" style="padding: 0.5rem 1.5rem; background: #48bb78; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem;">Add to Knowledge Base</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -443,6 +447,18 @@
                     <div id="pending-questions-container">
                         <p style="text-align: center; color: #666;">No pending questions. Great job staying on top of things! 🎉</p>
                     </div>
+                </div>
+
+                <!-- Quick Add Approved Answer -->
+                <div class="card">
+                    <h2>⚡ Quick Add Approved Answer</h2>
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        Proactively add answers to common questions before students ask them.
+                    </p>
+                    <input type="text" id="quick-qa-question" placeholder="Question (e.g., What is the exam format?)" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">
+                    <textarea id="quick-qa-answer" placeholder="Teacher-approved answer..." rows="3" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
+                    <input type="text" id="quick-qa-citation" placeholder="Citation (e.g., Module Handbook, Page 4)" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;">
+                    <button onclick="addQuickApprovedAnswer()" style="padding: 0.5rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem;">Add Answer</button>
                 </div>
 
                 <!-- Teacher Notes -->
@@ -601,15 +617,30 @@
             updateStats();
         }
 
-        async function addNewCommonQuestion() {
-            const question = prompt('Enter question:');
-            if (!question) return;
-            const answer = prompt('Enter answer:');
-            if (!answer) return;
-            const citation = prompt('Enter citation:');
-            if (!citation) return;
+        async function addNewCommonQuestionInline() {
+            const question = document.getElementById('new-qa-question').value.trim();
+            const answer = document.getElementById('new-qa-answer').value.trim();
+            const citation = document.getElementById('new-qa-citation').value.trim();
+            if (!question || !answer || !citation) { alert('Fill in all three fields.'); return; }
             await addKnowledgeBase(currentCourse, question, answer, citation);
             showSuccess('Q&A added');
+            document.getElementById('new-qa-question').value = '';
+            document.getElementById('new-qa-answer').value = '';
+            document.getElementById('new-qa-citation').value = '';
+            await loadKB();
+            updateStats();
+        }
+
+        async function addQuickApprovedAnswer() {
+            const question = document.getElementById('quick-qa-question').value.trim();
+            const answer = document.getElementById('quick-qa-answer').value.trim();
+            const citation = document.getElementById('quick-qa-citation').value.trim();
+            if (!question || !answer || !citation) { alert('Fill in all three fields.'); return; }
+            await addKnowledgeBase(currentCourse, question, answer, citation);
+            showSuccess('Answer added to knowledge base');
+            document.getElementById('quick-qa-question').value = '';
+            document.getElementById('quick-qa-answer').value = '';
+            document.getElementById('quick-qa-citation').value = '';
             await loadKB();
             updateStats();
         }

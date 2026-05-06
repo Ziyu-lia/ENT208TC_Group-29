@@ -145,10 +145,38 @@ def save_json(path: Path, data):
 def find_approved_answer(course_id: str, question: str) -> Optional[dict]:
     kb = load_json(KB_FILE)
     course_entries = kb.get(course_id, [])
-    q_lower = question.lower()
+    if not course_entries:
+        return None
+
+    q_keywords = set(w.lower() for w in re.findall(r'\w{3,}', question) if w.lower() not in (
+        "what", "when", "where", "which", "who", "how", "why", "does", "is", "are",
+        "the", "and", "for", "with", "this", "that", "from", "have", "has", "can",
+        "could", "would", "should", "will", "about", "explain", "tell", "please",
+        "could", "would", "should", "tell", "me", "about", "please",
+    ))
+
+    best_match = None
+    best_score = 0
+
     for entry in course_entries:
-        if entry["question"].lower() in q_lower or q_lower in entry["question"].lower():
+        stored_keywords = set(w.lower() for w in re.findall(r'\w{3,}', entry["question"]) if w.lower() not in (
+            "what", "when", "where", "which", "who", "how", "why", "does", "is", "are",
+            "the", "and", "for", "with", "this", "that", "from", "have", "has", "can",
+            "could", "would", "should", "will", "about", "explain", "tell", "please",
+        ))
+
+        overlap = len(q_keywords & stored_keywords)
+        if overlap > best_score:
+            best_score = overlap
+            best_match = entry
+
+    if best_score >= 2:
+        return best_match
+
+    for entry in course_entries:
+        if entry["question"].lower() in question.lower() or question.lower() in entry["question"].lower():
             return entry
+
     return None
 
 

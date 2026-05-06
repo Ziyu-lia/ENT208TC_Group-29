@@ -35,5 +35,11 @@
       "citation": "Physics Fundamentals, Chapter 4, Page 78"
     }
   ],
-  "rbe211": []
+  "rbe211": [
+    {
+      "question": "When is the laboratory data sheet due?",
+      "answer": "The laboratory data sheet (portfolio) is due on 19 April 2026 at 23:59. It accounts for 45% of the module mark and should be submitted as a single PDF containing experimental data, calculations, plots, and reflections from all laboratory sessions.",
+      "citation": "RBE211TC Module Handbook, Page 4"
+    }
+  ]
 }
