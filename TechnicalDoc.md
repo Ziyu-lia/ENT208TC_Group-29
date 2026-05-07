@@ -63,7 +63,7 @@
 │                                                                              │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
 │  │  /data/rbe211/                                                       │   │
-│  │  9 PDF lecture slides (278 pages total)                              │   │
+│  │  9 lecture slides + Module Handbook (288 pages total)                │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
@@ -93,7 +93,7 @@ Data Flow Legend:
 
 **MathJax 3.0 (CDN)** — A client-side JavaScript library loaded from jsdelivr CDN that renders LaTeX mathematical expressions in the browser. It processes inline math `\( ... \)` and display math `\[ ... \]` delimiters, converting them to properly formatted SVG equations. Called via `MathJax.typesetPromise()` after each new chat message is appended to the DOM.
 
-**Persistent Memory (JSON files)** — Two JSON files act as the system's long-term storage. `knowledge_base.json` stores teacher-approved question-answer-citation triples, organized by course ID. `pending_questions.json` stores student questions that have been submitted but not yet answered by a teacher. Both files are read and written on every relevant API call, ensuring data persists across server restarts.
+**Persistent Memory (JSON files)** — Two JSON files act as the system's long-term storage. `knowledge_base.json` stores teacher-approved question-answer-citation triples, organized by course ID. Teachers add entries via inline forms in the Common Q&A panel or the Quick Add section in the teacher portal — no popup dialogs. `pending_questions.json` stores student questions that have been submitted but not yet answered by a teacher. Both files are read and written on every relevant API call, ensuring data persists across server restarts.
 
 ### Data Flow: Student Asks a Question
 
@@ -101,7 +101,7 @@ Data Flow Legend:
 
 2. **Frontend → Backend** — The `askQuestion()` function in `student.html` calls `askSuperTA()` from `script.js`, which sends a `POST` request to `/api/chat` with JSON body `{ "question": "...", "course_id": "rbe211" }`.
 
-3. **Knowledge Base Check** — The FastAPI `/api/chat` endpoint first loads `knowledge_base.json` and performs a fuzzy string match against the student's question. If a teacher-approved answer exists, it is returned immediately with `"approved": true` and `"source_type": "pdf"`.
+3. **Knowledge Base Check** — The FastAPI `/api/chat` endpoint first loads `knowledge_base.json` and performs keyword-based fuzzy matching. It extracts content words (3+ letters, excluding common stop words) from both the student's question and each stored question. If 2+ keywords overlap, the approved answer is returned immediately with `"approved": true` and the green ✓ badge. If no keyword match is found, a fallback substring check runs as a safety net. If still no match, the query proceeds to the AI.
 
 4. **Context Retrieval** — If no approved answer exists, the backend retrieves the cached PDF pages for the specified course. It tokenizes the student's question into keywords (filtering out common stop words), scores each cached page by keyword overlap, and selects the top 15 most relevant pages.
 
@@ -131,6 +131,7 @@ Data Flow Legend:
 | **Math Rendering** | MathJax 3.0 (CDN) | KaTeX, server-side LaTeX rendering | MathJax 3.0 supports the full LaTeX standard used in engineering coursework (matrices, integrals, partial derivatives). KaTeX is faster but has limited symbol support. Server-side rendering would add complexity and latency. The CDN approach requires zero installation and works offline after first load (browser cache). |
 | **HTTP Client** | httpx (async) | requests, aiohttp | httpx provides a clean async API that matches FastAPI's async handlers, supports both sync and async usage, and has a requests-compatible interface. `requests` is synchronous and would block the event loop. `aiohttp` has a more complex API and is overkill for simple POST calls. |
 | **File Upload** | python-multipart (FastAPI built-in) | Base64-in-JSON (original approach) | The original frontend stored files as base64 strings in localStorage, which is limited to ~5MB and corrupts binary data. python-multipart enables proper multipart/form-data uploads directly to the server's filesystem, supporting files of any size with correct binary preservation. |
+| **Fuzzy Matching** | Keyword overlap scoring (2+ content words) | Exact substring match, semantic embeddings, AI-powered matching | Chosen for simplicity — handles paraphrases like "data sheet due" matching "laboratory data sheet due" without external dependencies or extra API calls. Exact substring matching misses too many variations; semantic embeddings require vector databases; AI matching adds latency and cost. Can be upgraded to vector search in future work. |
 
 ### Technical Risks and Mitigation
 
@@ -199,8 +200,9 @@ Data Flow Legend:
    - Click **Courses** → **RBE211 - Dynamic Systems** → **SuperTA Assistant**.
    - Type a question (e.g., "What is the Lagrange method?") and click "Ask SuperTA".
    - You should receive an answer with a citation like `📖 Source: 4 Lagrange Method - RBE211TC XJTLU.pdf, Page 12`.
-   - Ask a question not covered in the slides (e.g., "When is the final exam?") — you should see the AI state it couldn't find the info in slides, then provide a web-sourced answer with `🌐 Online Source: ...`.
-   - Open `http://localhost:8000/teacher` to access the Teacher Portal.
+   - Ask "When is the data sheet due?" — you should see a green ✓ Teacher Approved badge with the answer citing Page 4 of the Module Handbook.
+   - Ask a question not covered in the slides (e.g., "When is the final exam?") — you should see the AI state it couldn't find the info in slides, then provide an answer with `🌐 Online Source: AI Knowledge Base`.
+   - Open `http://localhost:8000/teacher` to access the Teacher Portal. Use the inline form in the Common Q&A panel or the Quick Add section to add approved answers.
 
 ### Common Issues and Solutions
 
@@ -230,6 +232,7 @@ Data Flow Legend:
 | **No teacher AI draft generation** | The teacher portal requires manual answer entry. The AI could pre-draft answers for teacher review, but this was deprioritized. | Teachers must type every answer from scratch, which is time-consuming. The current workflow works but is not optimized for high question volume. |
 | **Single-course focus (RBE211)** | Only RBE211 has PDF materials loaded. Other courses (CS101, MATH201, PHYS101) rely on pre-seeded knowledge base entries and general AI knowledge with web search. | Students in non-RBE211 courses receive web-sourced answers (🌐) rather than slide-grounded answers (📖). Adding PDFs for other courses is a configuration change, not a code change. |
 | **MathJax requires internet for first load** | MathJax 3.0 is loaded from a CDN (jsdelivr.net). | On first page load without internet, mathematical formulas will display as raw LaTeX text. After the first load, the browser caches MathJax and it works offline. |
+| **Fuzzy matching requires 2+ keyword overlap** | Simple keyword intersection without semantic understanding. | Questions like "When is the assignment due?" may not match "laboratory data sheet due" (only 1 shared word: "due"). The AI still provides a correct answer from PDFs, but without the ✓ Teacher Approved badge. |
 
 ### Future Work
 
